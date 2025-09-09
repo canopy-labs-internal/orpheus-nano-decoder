@@ -4,8 +4,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from layers import Snake1d, WNConv1d
-from dac_quantize import ResidualVectorQuantize
+
+from layers import Snake1d, WNConv1d, WNConvTranspose1d
+from quantizer import ResidualVectorQuantize
 
 
 def init_weights(m):

@@ -14,7 +14,7 @@ import torch.nn as nn
 
 from layers import WNConv1d, ConvNeXtBlock
 from quantizer import ResidualVectorQuantize
-from dac_model import DAC
+from dac import DAC
 
 
 class DualCodecDecoder(nn.Module):
