@@ -1,0 +1,8 @@
+torch>=2.1
+numpy
+einops
+audiotools
+easydict
+cached_path
+safetensors
+hydra-core==1.3.*
