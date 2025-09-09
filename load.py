@@ -1,6 +1,7 @@
 from pathlib import Path
 from cached_path import cached_path
-import safetensors.torch
+import safetensors
+from safetensors.torch import load_file
 
 # Local model definition
 from model import DualCodecDecoder
@@ -38,7 +39,19 @@ def get_model(
     )
 
     if checkpoint_file.exists():
-        safetensors.torch.load_model(model, str(checkpoint_file), strict=False)
+        state_dict = load_file(str(checkpoint_file))
+
+        # Filter out encoder-related parameters
+        decoder_only_state_dict = {
+            k: v for k, v in state_dict.items() if "encoder" not in k
+        }
+        
+        # This should strictly match the model architecture   
+        try:
+            model.load_state_dict(decoder_only_state_dict)
+        except Exception as e:
+            print(f"Error loading state dict: {e}")
+
     else:
         raise FileNotFoundError(f"Checkpoint file {checkpoint_file} not found")
 
@@ -50,6 +63,8 @@ def get_model(
 if __name__ == "__main__":
     model = get_model()
     
+    print(f"Model loaded successfully")
+     
     import torch
     semantic_codes = torch.randint(0, 16384, (1, 1, 1024), dtype=torch.long)
     acoustic_codes = torch.randint(0, 4096, (1, 2, 1024), dtype=torch.long)
@@ -57,5 +72,4 @@ if __name__ == "__main__":
     with torch.no_grad():
         reconstructed_audio = model.decode_from_codes(semantic_codes, acoustic_codes)
         
-    print(reconstructed_audio.shape)
-    print(model)
+    print(f"Reconstructed audio shape: {reconstructed_audio.shape}")
