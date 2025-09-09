@@ -1,41 +1,58 @@
 from pathlib import Path
 from cached_path import cached_path
 import safetensors.torch
-import hydra
-from hydra import initialize_config_dir, compose
 
-from model import DualCodec, DAC 
-
-_MODEL2WEIGHTS = {"12hz_simple": "model.safetensors"}
-_MODEL2CFG = {"12hz_simple": "decoder_12hz_3vq.yaml"}
+# Local model definition
+from model import DualCodecDecoder
 
 
-def get_model(model_id: str = "12hz_simple", pretrained_path: str = "hf://vanshjjw/autumn-dualcodec-1s-2a-decoder-only-decay-0.9", fname: str | None = None):
-    pretrained_path = Path(cached_path(pretrained_path))
-    if fname is None:
-        fname = _MODEL2WEIGHTS[model_id]
+def get_model(
+    pretrained_path: str = "hf://vanshjjw/autumn-dualcodec-1s-2a-decoder-only-decay-0.9",
+    filename: str = "model.safetensors"
+):
+    """Load a pretrained DualCodec decoder.
 
-    conf_dir = Path(__file__).parent / "conf/model"
-    with initialize_config_dir(version_base="1.3", config_dir=str(conf_dir)):
-        cfg = compose(config_name=_MODEL2CFG[model_id])
-        model = hydra.utils.instantiate(cfg.model)
+    Parameters
+    ----------
+    pretrained_path : str
+        Remote or local path to directory containing the checkpoint.
+    filename : str
+        Name of the weights file.
+    """
+    checkpoint_directory = Path(cached_path(pretrained_path))
+    checkpoint_file = checkpoint_directory / filename
+    
+    # enocder parameters only included for backwards compatibility
 
-    ckpt = pretrained_path / fname
-    if ckpt.exists():
-        safetensors.torch.load_model(model, str(ckpt), strict=False)
-        
+    model = DualCodecDecoder(
+        sample_rate=24000,
+        encoder_rates=[4, 5, 6, 8, 2],
+        decoder_rates=[2, 8, 6, 5, 4],
+        encoder_dim=32,
+        decoder_dim=1536,
+        n_codebooks=2,
+        codebook_size=4096,
+        semantic_codebook_size=16384,
+        is_causal=True,
+        semantic_downsample_factor=4,
+    )
+
+    if checkpoint_file.exists():
+        safetensors.torch.load_model(model, str(checkpoint_file), strict=False)
+    else:
+        raise FileNotFoundError(f"Checkpoint file {checkpoint_file} not found")
+
     model.eval()
     return model
+
 
 
 if __name__ == "__main__":
     model = get_model()
     
-    # Load original DualCodec for encoding
     import dualcodec
-    from dualcodec import get_model as get_original_model
-    original_model = get_original_model("12hz_v1")
-    dualcodec_inference = dualcodec.Inference(original_model)
+    dualcodec_model = dualcodec.get_model("12hz_v1")
+    dualcodec_inference = dualcodec.Inference(dualcodec_model)
     
     import torch
     import torchaudio

@@ -17,7 +17,7 @@ from quantizer import ResidualVectorQuantize
 from dac_model import DAC
 
 
-class DualCodec(nn.Module):
+class DualCodecDecoder(nn.Module):
     def __init__(
         self,
         encoder_dim: int = 64,

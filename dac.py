@@ -2,8 +2,7 @@ import math
 from typing import List, Union
 import numpy as np
 import torch
-from audiotools.ml import BaseModel
-from torch import nn
+import torch.nn as nn
 import torch.nn.functional as F
 from layers import Snake1d, WNConv1d
 from dac_quantize import ResidualVectorQuantize
@@ -97,7 +96,7 @@ class Decoder(nn.Module):
         return self.model(x)
 
 
-class DAC(BaseModel):
+class DAC(nn.Module):
     def __init__(
         self,
         encoder_dim: int = 64,
